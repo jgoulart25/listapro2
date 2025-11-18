@@ -34,6 +34,10 @@
             width: 1.25rem;
             height: 1.25rem;
         }
+        /* Garantindo que o modal seja exibido como flex quando ativo */
+        #list-modal:not([style*="display: none"]) {
+            display: flex;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -108,7 +112,7 @@
     </div>
 
     <!-- Modal Base (Compartilhado para Nova/Excluir Lista) -->
-    <div id="list-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+    <div id="list-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden" style="display: none;">
         <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all">
             <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
             <div id="modal-body">
@@ -134,7 +138,7 @@
         // ESTA CONFIGURAÇÃO É CRÍTICA PARA O FUNCIONAMENTO DO APP NO GITHUB PAGES.
         // =================================================================
         const placeholderFirebaseConfig = {
-           apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
+  apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
   authDomain: "listapro-6ef73.firebaseapp.com",
   projectId: "listapro-6ef73",
   storageBucket: "listapro-6ef73.firebasestorage.app",
@@ -475,6 +479,12 @@
         });
 
         // --- GESTÃO DE LISTAS (MODAL) ---
+        
+        // CORREÇÃO: Usando style.display para garantir que o modal feche/abra corretamente
+        window.hideModal = () => {
+            document.getElementById('list-modal').style.display = 'none';
+        };
+
 
         window.showListModal = (action) => {
             const modal = document.getElementById('list-modal');
@@ -504,7 +514,8 @@
                 modalActionBtn.onclick = deleteList;
             }
             
-            modal.classList.remove('hidden');
+            // CORREÇÃO: Usando style.display para garantir que o modal seja exibido
+            modal.style.display = 'flex';
         };
 
         window.createList = async () => {
@@ -519,10 +530,11 @@
                     name: name,
                     createdAt: new Date(),
                 });
-                hideModal();
+                hideModal(); // Fecha o modal após o sucesso
             } catch (error) {
                 console.error("Erro ao criar lista:", error);
-                showModalMessage("Erro", "Não foi possível criar a lista.");
+                // Em caso de erro, exibe a mensagem de erro, que possui o botão "OK" que fecha o modal
+                showModalMessage("Erro", "Não foi possível criar a lista. Verifique sua conexão ou regras do Firestore.");
             }
         };
 
@@ -553,10 +565,7 @@
             }
         };
         
-        window.hideModal = () => {
-            document.getElementById('list-modal').classList.add('hidden');
-        };
-
+        
         // Modal para mensagens de erro/confirmação
         const showModalMessage = (title, message, confirmCallback = null, confirmText = 'OK', confirmStyle = 'bg-blue-500 hover:bg-blue-600') => {
             const modal = document.getElementById('list-modal');
@@ -579,7 +588,8 @@
                 modalActionBtn.onclick = hideModal;
             }
 
-            modal.classList.remove('hidden');
+            // CORREÇÃO: Usando style.display para garantir que o modal seja exibido
+            modal.style.display = 'flex';
         };
 
         // --- EXPORTAR E COMPARTILHAR ---
