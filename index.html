@@ -134,12 +134,12 @@
         // ESTA CONFIGURAÇÃO É CRÍTICA PARA O FUNCIONAMENTO DO APP NO GITHUB PAGES.
         // =================================================================
         const placeholderFirebaseConfig = {
-            apiKey: "SEU_API_KEY_AQUI", // Ex: "AIzaSy..."
-            authDomain: "SEU_AUTH_DOMAIN_AQUI", // Ex: "seu-projeto.firebaseapp.com"
-            projectId: "SEU_PROJECT_ID_AQUI", // Ex: "seu-projeto-12345"
-            storageBucket: "SEU_STORAGE_BUCKET_AQUI",
-            messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
-            appId: "SEU_APP_ID_AQUI"
+            apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
+  authDomain: "listapro-6ef73.firebaseapp.com",
+  projectId: "listapro-6ef73",
+  storageBucket: "listapro-6ef73.firebasestorage.app",
+  messagingSenderId: "469100355228",
+  appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
         };
         // =================================================================
         
@@ -148,15 +148,16 @@
         import { getFirestore, collection, doc, query, orderBy, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-       // Variáveis Globais (Fornecidas pelo ambiente ou substitutas)
-        const firebaseConfig = {
-  apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
-  authDomain: "listapro-6ef73.firebaseapp.com",
-  projectId: "listapro-6ef73",
-  storageBucket: "listapro-6ef73.firebasestorage.app",
-  messagingSenderId: "469100355228",
-  appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
-};
+        // Set Firebase logging level for debugging on the external host
+        setLogLevel('debug');
+
+        // Initialize Firebase
+        let db;
+        let auth;
+        let userId = null;
+        let currentListId = null;
+        let shoppingLists = [];
+        let itemsUnsubscribe = null; // Para gerenciar a subscrição dos itens
 
         const app = initializeApp(placeholderFirebaseConfig);
         db = getFirestore(app);
