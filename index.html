@@ -149,9 +149,25 @@
         import { getFirestore, doc, onSnapshot, collection, setDoc, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
-        // Variáveis Globais (Fornecidas pelo ambiente)
+        // Variáveis Globais (Fornecidas pelo ambiente ou substitutas)
+        const placeholderFirebaseConfig = {
+            // ATENÇÃO: SUBSTITUA ESTES VALORES!
+            // Para resolver o erro no GitHub Pages, você DEVE trocar 'SEU_...' 
+            // pelas chaves reais do seu projeto Firebase (Console -> Configurações do Projeto).
+            apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvMQUI", 
+            authDomain: "listapro-6ef73.firebaseapp.com",
+            projectId: "listapro-6ef73",
+            storageBucket: "listapro-6ef73.firebasestorage.app",
+            messagingSenderId: "469100355228",
+            appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
+        };
+        
+        // Determina a configuração: usa a fornecida pelo Canvas (se disponível) ou o placeholder para deploy externo.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : placeholderFirebaseConfig;
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-shopping-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let app;
@@ -613,9 +629,9 @@
 
         /** Inicializa o Firebase e a Autenticação. */
         const initializeFirebase = async () => {
-            if (!firebaseConfig) {
-                console.error("Firebase config is missing.");
-                loadingOverlay.textContent = "Erro: Configuração do Firebase ausente.";
+            if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("SEU_")) {
+                console.error("Firebase config is missing or using placeholder.");
+                loadingOverlay.textContent = "ERRO CRÍTICO: Configuração do Firebase ausente. Por favor, edite o código para inserir suas chaves.";
                 return;
             }
 
@@ -627,8 +643,10 @@
                 auth = getAuth(app);
                 
                 if (initialAuthToken) {
+                    // Usado apenas no ambiente Canvas
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
+                    // Usado no GitHub Pages (sign-in anônimo)
                     await signInAnonymously(auth);
                 }
 
@@ -636,7 +654,6 @@
                     if (user) {
                         userId = user.uid;
                     } else {
-                        // This should ideally not happen if signed in anonymously
                         userId = null; 
                     }
                     isAuthReady = true;
@@ -657,9 +674,6 @@
             if (!isAuthReady || !userId || !db) return;
 
             const listCollectionRef = collection(db, getListCollectionPath());
-            // Firestore does not allow orderBy() without index, which is complex. We'll sort locally by name.
-            // Using query(listCollectionRef, orderBy('name', 'asc')) is risky without an index.
-            // We fetch all and sort locally.
             const listsQuery = query(listCollectionRef);
 
             onSnapshot(listsQuery, (snapshot) => {
@@ -704,8 +718,6 @@
                     navigator.serviceWorker.register('./service-worker.js')
                         .then(registration => {
                             console.log('ServiceWorker registrado com sucesso:', registration.scope);
-                            // Exibe um prompt de instalação (Android/Chrome)
-                            // A implementação exata do prompt de instalação varia por navegador.
                         })
                         .catch(err => {
                             console.error('Falha no registro do ServiceWorker:', err);
