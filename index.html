@@ -150,17 +150,14 @@
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
         // Variáveis Globais (Fornecidas pelo ambiente ou substitutas)
-        const placeholderFirebaseConfig = {
-            // ATENÇÃO: SUBSTITUA ESTES VALORES!
-            // Para resolver o erro no GitHub Pages, você DEVE trocar 'SEU_...' 
-            // pelas chaves reais do seu projeto Firebase (Console -> Configurações do Projeto).
-    apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
-    authDomain: "listapro-6ef73.firebaseapp.com",
-    projectId: "listapro-6ef73",
-    storageBucket: "listapro-6ef73.firebasestorage.app",
-    messagingSenderId: "469100355228",
-    appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
-        };
+        const firebaseConfig = {
+  apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
+  authDomain: "listapro-6ef73.firebaseapp.com",
+  projectId: "listapro-6ef73",
+  storageBucket: "listapro-6ef73.firebasestorage.app",
+  messagingSenderId: "469100355228",
+  appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
+};
         
         // Determina a configuração: usa a fornecida pelo Canvas (se disponível) ou o placeholder para deploy externo.
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
@@ -734,4 +731,5 @@
     </script>
 </body>
 </html>
+
 
