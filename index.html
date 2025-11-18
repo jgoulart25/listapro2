@@ -134,18 +134,18 @@
         // ESTA CONFIGURAÇÃO É CRÍTICA PARA O FUNCIONAMENTO DO APP NO GITHUB PAGES.
         // =================================================================
         const placeholderFirebaseConfig = {
-            apiKey: "SEU_API_KEY_AQUI", // Ex: "AIzaSy..."
-            authDomain: "SEU_AUTH_DOMAIN_AQUI", // Ex: "seu-projeto.firebaseapp.com"
-            projectId: "SEU_PROJECT_ID_AQUI", // Ex: "seu-projeto-12345"
-            storageBucket: "SEU_STORAGE_BUCKET_AQUI",
-            messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
-            appId: "SEU_APP_ID_AQUI"
+           apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
+  authDomain: "listapro-6ef73.firebaseapp.com",
+  projectId: "listapro-6ef73",
+  storageBucket: "listapro-6ef73.firebasestorage.app",
+  messagingSenderId: "469100355228",
+  appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
         };
         // =================================================================
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, query, orderBy, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, query, orderBy, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Set Firebase logging level for debugging on the external host
@@ -200,7 +200,8 @@
 
         // --- FIREBASE E AUTENTICAÇÃO ---
 
-        const initializeApp = async () => {
+        // RENOMEADO: O nome 'initializeApp' estava em conflito com a função importada do Firebase.
+        const startApp = async () => {
             loadingOverlay.style.display = 'block';
             
             // Configura persistência de sessão (opcional, mas bom para PWAs)
@@ -532,10 +533,8 @@
                 // Excluir todos os itens da subcoleção primeiro (Firestore não faz exclusão em cascata)
                 const itemsPath = generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`);
                 const snapshot = await getDocs(collection(db, itemsPath));
-                const batch = writeBatch(db); // Usar batch para exclusão em massa (precisa importar writeBatch)
                 
-                // Nota: writeBatch não está no import simplificado acima (necessário para exclusão real da subcoleção)
-                // Usando a exclusão um por um como fallback para manter a compatibilidade com o CDN simplificado:
+                // Usando a exclusão um por um como fallback (o batch não está importado no CDN)
                 snapshot.docs.forEach(async (d) => {
                     await deleteDoc(d.ref); 
                 });
@@ -742,7 +741,7 @@
         }
 
         // Inicia o app web
-        window.addEventListener('load', initializeApp);
+        window.addEventListener('load', startApp);
     </script>
 </body>
 </html>
