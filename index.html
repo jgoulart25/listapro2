@@ -3,153 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Compras Inteligente</title>
-    <!-- Configuração do PWA -->
-    <link rel="manifest" href="./manifest.json">
+    <title>Lista de Compras PWA</title>
+    <!-- Configurações PWA e Favicon -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
-    <!-- Meta tags para iOS (Apple) PWA installation -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="ListaPro">
-    <!-- Icone iOS (Usando Placeholder como fallback) -->
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/2563eb/ffffff?text=L">
-    
-    <!-- Carrega Tailwind CSS para estilização moderna -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Define a fonte Inter e classes responsivas do Tailwind -->
+    <!-- Configuração de fontes -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
+        /* Configuração de estilo Tailwind + Inter */
+        :root {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f7f7;
-            min-height: 100vh;
         }
-        /* Estilização para a barra de rolagem (opcional, para um visual mais limpo) */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
+        .scroll-container {
+            max-height: calc(100vh - 320px); /* Ajusta a altura da lista */
         }
-        .scrollbar-hide {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+        .whatsapp-icon {
+            /* Ícone do WhatsApp */
+            fill: currentColor;
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        .pdf-icon {
+            /* Ícone de PDF */
+            fill: currentColor;
+            width: 1.25rem;
+            height: 1.25rem;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="bg-gray-50 min-h-screen">
+    <div id="app-container" class="max-w-xl mx-auto p-4 md:p-6">
+        
+        <!-- HEADER e Controles da Lista -->
+        <header class="bg-white p-4 rounded-xl shadow-lg mb-4">
+            <h1 class="text-3xl font-bold text-blue-700 mb-4">🛒 Lista Pro</h1>
+            
+            <div id="loading-overlay" class="text-center text-blue-600 font-semibold py-4" style="display: none;">
+                <p class="animate-pulse">Aguarde, carregando o app...</p>
+            </div>
+            
+            <!-- Diagnóstico de Erro de Autenticação (Será exibido se o carregamento falhar) -->
+            <div id="diagnostic-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">Erro de Carregamento/Autenticação:</strong>
+                <span class="block sm:inline"> O aplicativo não conseguiu se conectar ao Firebase. Verifique se as chaves API em `index.html` estão corretas e se a Autenticação Anônima está habilitada no Console do Firebase.</span>
+            </div>
 
-    <!-- Container Principal do App -->
-    <div id="app-container" class="max-w-4xl mx-auto bg-white shadow-2xl rounded-xl p-4 md:p-8">
-
-        <h1 class="text-3xl font-extrabold text-blue-800 mb-6 border-b-2 pb-2 border-blue-100 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Minhas Listas de Compras
-        </h1>
-
-        <!-- Carregamento e Autenticação -->
-        <div id="loading-overlay" class="text-center p-8">
-            <p class="text-gray-600">Aguarde, carregando o app...</p>
-        </div>
-
-        <!-- Conteúdo Principal após o carregamento -->
-        <div id="main-content" class="hidden">
-
-            <!-- Seção de Seleção de Listas -->
-            <div id="list-selection-area" class="mb-8 p-4 bg-blue-50 rounded-lg shadow-inner">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <h2 class="text-xl font-semibold text-blue-700">Escolha ou Crie uma Lista:</h2>
-                    <button onclick="showCreateListModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-200 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
+            <div id="main-content" style="display: none;">
+                <!-- Seleção de Lista Atual -->
+                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                    <select id="list-selector" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></select>
+                    <button onclick="showListModal('create')" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 flex-shrink-0">
                         Nova Lista
                     </button>
-                </div>
-                <div id="lists-container" class="flex flex-wrap gap-3 scrollbar-hide overflow-x-auto pb-2">
-                    <!-- As listas serão renderizadas aqui -->
-                </div>
-            </div>
-
-            <!-- Seção da Lista Ativa -->
-            <div id="active-list-area" class="p-4 border border-gray-200 rounded-lg shadow-lg">
-                <h2 id="list-title" class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Selecione uma Lista Acima</h2>
-                
-                <!-- Formulário de Adição de Item -->
-                <form id="add-item-form" class="flex flex-col md:flex-row gap-2 mb-6 hidden">
-                    <input type="text" id="item-name" placeholder="Nome do Item (Ex: Arroz)" required class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <input type="number" id="item-quantity" placeholder="Qtd" value="1" min="1" class="w-16 p-3 border border-gray-300 rounded-lg text-center focus:ring-blue-500 focus:border-blue-500">
-                    <input type="number" id="item-price" placeholder="Preço (Opcional)" step="0.01" min="0" class="w-24 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow transition duration-200 flex items-center justify-center">
-                        Adicionar
+                    <button onclick="showListModal('delete')" id="delete-list-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 flex-shrink-0 disabled:opacity-50" disabled>
+                        Excluir Lista
                     </button>
-                </form>
+                </div>
 
-                <!-- Itens da Lista -->
-                <ul id="items-list" class="space-y-2">
-                    <p id="empty-list-message" class="text-gray-500 italic">Esta lista está vazia. Adicione um item!</p>
-                </ul>
-
-                <!-- Rodapé da Lista (Totais e Ações) -->
-                <div id="list-footer" class="mt-6 pt-4 border-t-2 border-blue-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hidden">
-                    
-                    <!-- Totais -->
-                    <div class="text-lg font-semibold text-gray-700">
-                        <p>Itens Comprados: <span id="purchased-count" class="font-bold text-green-600">0</span></p>
-                        <p>Total Estimado: <span id="total-price" class="font-extrabold text-blue-600">R$ 0,00</span></p>
-                    </div>
-
-                    <!-- Botões de Ação -->
-                    <div class="flex space-x-3">
-                         <button onclick="showDeleteListModal()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow transition duration-200 flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 100 2v6a1 1 0 100-2V8z" clip-rule="evenodd" />
-                            </svg>
-                            Excluir Lista
+                <!-- Resumo e Ações -->
+                <div class="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <p class="text-lg font-bold text-blue-800">
+                        Total Estimado: <span id="total-price" class="text-xl">R$ 0,00</span>
+                    </p>
+                    <div class="flex space-x-2">
+                        <!-- Botão Exportar PDF -->
+                        <button onclick="exportToPDF()" title="Exportar para PDF" class="p-3 bg-blue-500 hover:bg-blue-600 rounded-full text-white shadow-md transition duration-200">
+                            <svg class="pdf-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM12.75 16.5H11.25V14H12.75V16.5ZM16.5 10.5C16.5 9.175 15.65 8.25 14.5 8.25H9.5C8.35 8.25 7.5 9.175 7.5 10.5V16.5C7.5 17.825 8.35 18.75 9.5 18.75H14.5C15.65 18.75 16.5 17.825 16.5 16.5V10.5ZM14.5 10.5H9.5V12.75H14.5V10.5Z" fill="currentColor"/></svg>
                         </button>
-                        
-                        <!-- BOTÃO PDF -->
-                        <button onclick="handleExportPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-xl transition duration-200 flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
-                                <path fill-rule="evenodd" d="M3.75 6.75a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM4.5 9.75a.75.75 0 000 1.5h11a.75.75 0 000-1.5H4.5zM3.75 12.75a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM4.5 15.75a.75.75 0 000 1.5h11a.75.75 0 000-1.5H4.5z" clip-rule="evenodd" />
-                                <path fill-rule="evenodd" d="M12 2.25H5.25A2.25 2.25 0 003 4.5v11.5a2.25 2.25 0 002.25 2.25h11.5A2.25 2.25 0 0019 16.5V7.5a2.25 2.25 0 00-2.25-2.25h-5.46a.75.75 0 01-.527-.22L11.47 3.28a.75.75 0 00-.53-.22H5.25z" clip-rule="evenodd" />
-                            </svg>
-                            Exportar PDF
-                        </button>
-                        
-                        <button id="whatsapp-share-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-xl transition duration-200 flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-1">
-                                <path d="M12.001 2.001c-5.523 0-10 4.478-10 10s4.477 10 10 10 10-4.478 10-10-4.477-10-10-10zm-1.938 15.655l-2.072-.647c-.663-.207-1.16-.627-1.397-1.365l-.014-.047c-.012-.038-.007-.077.012-.112l1.393-2.616c.214-.401.127-.887-.21-1.156l-1.35-1.047c-.373-.289-.484-.81-.274-1.213l2.616-4.717c.214-.401.701-.58 1.156-.412l.647.21c.54.178.96.598 1.138 1.138l.647 2.072c.178.54-.007 1.056-.412 1.27l-1.047 1.35c-.328.423-.332 1.025-.007 1.455l2.616 4.717c.214.401.025.91-.412 1.12l-2.072.647z"/>
-                            </svg>
-                            Compartilhar WhatsApp
+                        <!-- Botão Compartilhar WhatsApp -->
+                        <button onclick="shareWhatsApp()" title="Compartilhar via WhatsApp" class="p-3 bg-green-500 hover:bg-green-600 rounded-full text-white shadow-md transition duration-200">
+                            <svg class="whatsapp-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.035 1.99a10.035 10.035 0 0 0-8.914 5.378l-1.12 3.692-.008.024-1.996 6.556a1.002 1.002 0 0 0 .524 1.272l.02.016 3.593 1.838.006.002a9.96 9.96 0 0 0 14.65-.968 10.024 10.024 0 0 0 1.258-13.844 10.035 10.035 0 0 0-7.98-4.152zm-3.238 3.54a1.006 1.006 0 0 1 .494.332 1.007 1.007 0 0 1-.223 1.34c-1.22.868-2.65 1.88-3.92 2.72a.54.54 0 0 0-.2.434l.325 1.487c.07.32.32.484.58.484.148 0 .298-.052.417-.156.97-.838 2.08-1.748 3.1-2.454.218-.152.47-.234.73-.234.333 0 .63.123.864.335 1.57 1.415 3.018 2.87 4.54 4.19.467.41.87.618 1.45.618.31 0 .55-.17.658-.456l.89-2.79c.174-.54.015-1.135-.382-1.574-1.132-1.29-2.28-2.64-3.41-3.96-.28-.33-.35-.63-.26-1.04l.11-1.018c.07-.468.17-.935.26-1.402.1-.475-.152-.77-.59-.77h-.002c-.52 0-1.11.234-1.89.845-.584.466-1.157.945-1.728 1.43z" fill="currentColor"/></svg>
                         </button>
                     </div>
                 </div>
-
             </div>
+        </header>
 
+        <!-- Formulário para Adicionar Item -->
+        <div id="item-form-container" class="bg-white p-4 rounded-xl shadow-lg mb-4" style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Adicionar Novo Item</h2>
+            <form id="add-item-form" class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                <input type="text" id="item-name" placeholder="Nome do Item (Ex: Leite)" required class="md:col-span-2 p-3 border border-gray-300 rounded-lg">
+                <input type="number" id="item-quantity" placeholder="Qtd (Ex: 2)" min="1" value="1" class="md:col-span-1 p-3 border border-gray-300 rounded-lg">
+                <input type="number" id="item-price" placeholder="Preço (Ex: 5.50)" step="0.01" class="md:col-span-2 p-3 border border-gray-300 rounded-lg">
+                <button type="submit" class="md:col-span-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200">
+                    Adicionar
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de Itens -->
+        <div id="list-items-container" class="bg-white p-4 rounded-xl shadow-lg" style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">Itens da Lista</h2>
+            <div id="shopping-list" class="scroll-container overflow-y-auto divide-y divide-gray-100">
+                <!-- Itens serão injetados aqui -->
+                <p id="empty-list-message" class="text-gray-500 text-center py-6">Adicione seu primeiro item!</p>
+            </div>
         </div>
     </div>
 
-    <!-- Modal Base (Use para Criar Lista e Mensagens) -->
-    <div id="modal-backdrop" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden transition-opacity duration-300"></div>
-    <div id="modal-container" class="fixed inset-0 z-50 overflow-y-auto hidden">
-        <div id="modal-content" class="flex items-center justify-center min-h-full p-4">
-            <!-- Conteúdo do Modal aqui -->
+    <!-- Modal Base (Compartilhado para Nova/Excluir Lista) -->
+    <div id="list-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all">
+            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
+            <div id="modal-body">
+                <!-- Conteúdo dinâmico (Formulário ou Confirmação) -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="hideModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-200">
+                    Cancelar
+                </button>
+                <button id="modal-action-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"></button>
+            </div>
         </div>
     </div>
-
-    <!-- Adiciona a biblioteca jsPDF para geração de PDF (necessita estar antes do script do módulo) -->
+    
+    <!-- Scripts de Bibliotecas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- Scripts do Firebase e Lógica do App -->
+    <!-- Script Principal (Módulo) -->
     <script type="module">
-        // Importações do Firebase
+        // =================================================================
+        // ATENÇÃO: CONFIGURAÇÃO DO FIREBASE
+        // VOCÊ DEVE SUBSTITUIR OS VALORES DE "SEU_..." ABAIXO PELAS CHAVES REAIS DO SEU PROJETO FIREBASE!
+        // ESTA CONFIGURAÇÃO É CRÍTICA PARA O FUNCIONAMENTO DO APP NO GITHUB PAGES.
+        // =================================================================
+        const placeholderFirebaseConfig = {
+            apiKey: "SEU_API_KEY_AQUI", // Ex: "AIzaSy..."
+            authDomain: "SEU_AUTH_DOMAIN_AQUI", // Ex: "seu-projeto.firebaseapp.com"
+            projectId: "SEU_PROJECT_ID_AQUI", // Ex: "seu-projeto-12345"
+            storageBucket: "SEU_STORAGE_BUCKET_AQUI",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+            appId: "SEU_APP_ID_AQUI"
+        };
+        // =================================================================
+        
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, collection, setDoc, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, query, orderBy, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis Globais (Fornecidas pelo ambiente ou substitutas)
+       // Variáveis Globais (Fornecidas pelo ambiente ou substitutas)
         const firebaseConfig = {
   apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
   authDomain: "listapro-6ef73.firebaseapp.com",
@@ -158,578 +157,591 @@
   messagingSenderId: "469100355228",
   appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
 };
+
+        const app = initializeApp(placeholderFirebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
         
-        // Determina a configuração: usa a fornecida pelo Canvas (se disponível) ou o placeholder para deploy externo.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : placeholderFirebaseConfig;
+        const APP_COLLECTION = "shopping_lists";
+        const ITEMS_COLLECTION = "items";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-shopping-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let app;
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
-
-        // Variáveis de Estado do App
-        let lists = [];
-        let activeListId = null;
-        let activeList = null;
-
-        // Elementos do DOM
+        // Elementos da UI
+        const listSelector = document.getElementById('list-selector');
+        const listContainer = document.getElementById('shopping-list');
+        const totalPriceElement = document.getElementById('total-price');
+        const addItemForm = document.getElementById('add-item-form');
         const loadingOverlay = document.getElementById('loading-overlay');
         const mainContent = document.getElementById('main-content');
-        const listsContainer = document.getElementById('lists-container');
-        const listTitleEl = document.getElementById('list-title');
-        const addItemForm = document.getElementById('add-item-form');
-        const itemsListEl = document.getElementById('items-list');
+        const itemFormContainer = document.getElementById('item-form-container');
+        const listItemsContainer = document.getElementById('list-items-container');
+        const deleteListBtn = document.getElementById('delete-list-btn');
         const emptyListMessage = document.getElementById('empty-list-message');
-        const listFooter = document.getElementById('list-footer');
-        const purchasedCountEl = document.getElementById('purchased-count');
-        const totalPriceEl = document.getElementById('total-price');
-        const whatsappShareBtn = document.getElementById('whatsapp-share-btn');
+        const diagnosticMessage = document.getElementById('diagnostic-message');
 
-        // Modal Elements
-        const modalBackdrop = document.getElementById('modal-backdrop');
-        const modalContainer = document.getElementById('modal-container');
-        const modalContent = document.getElementById('modal-content');
+        // --- FUNÇÕES DE UTILITY E FORMATO ---
 
-        // Helper para formatar moeda
-        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
-        // --- Funções de UI (Modal) ---
-
-        /** Abre o modal com o conteúdo HTML fornecido. */
-        const showModal = (htmlContent) => {
-            modalContent.innerHTML = htmlContent;
-            modalBackdrop.classList.remove('hidden');
-            modalBackdrop.classList.add('opacity-100');
-            modalContainer.classList.remove('hidden');
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+            }).format(amount);
         };
 
-        /** Fecha o modal. */
-        const closeModal = () => {
-            modalBackdrop.classList.add('hidden');
-            modalContainer.classList.add('hidden');
-            modalContent.innerHTML = '';
-        };
-        
-        modalBackdrop.addEventListener('click', closeModal);
-
-        /** Exibe o modal para criar uma nova lista. */
-        window.showCreateListModal = () => {
-            const html = `
-                <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
-                    <h3 class="text-xl font-bold mb-4 text-gray-800">Criar Nova Lista</h3>
-                    <form id="create-list-form">
-                        <input type="text" id="new-list-name" placeholder="Nome da Lista (Ex: Churrasco)" required 
-                            class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-blue-500 focus:border-blue-500">
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-200">
-                                Cancelar
-                            </button>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-                                Criar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            showModal(html);
-            document.getElementById('create-list-form').addEventListener('submit', handleCreateList);
+        const generatePath = (collectionName) => {
+            if (!userId) {
+                console.error("Erro: Usuário não autenticado para gerar o caminho.");
+                return null;
+            }
+            // Usa o padrão de coleções privadas: /artifacts/{appId}/users/{userId}/{collectionName}
+            const appId = placeholderFirebaseConfig.projectId; // Usando projectId como substituto para appId
+            return `artifacts/${appId}/users/${userId}/${collectionName}`;
         };
 
-        /** Exibe o modal de confirmação para deletar a lista. */
-        window.showDeleteListModal = () => {
-            if (!activeList) return;
-            const html = `
-                <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
-                    <h3 class="text-xl font-bold mb-4 text-red-600">Confirmação</h3>
-                    <p class="mb-6">Tem certeza que deseja <span class="font-bold">excluir a lista "${activeList.name}"</span>? Esta ação não pode ser desfeita.</p>
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-200">
-                            Cancelar
-                        </button>
-                        <button type="button" onclick="handleDeleteList()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-                            Sim, Excluir
-                        </button>
-                    </div>
-                </div>
-            `;
-            showModal(html);
-        };
+        // --- FIREBASE E AUTENTICAÇÃO ---
 
-
-        // --- Funções de Renderização (Render) ---
-
-        /** Renderiza todos os botões de lista na área de seleção. */
-        const renderLists = () => {
-            listsContainer.innerHTML = '';
-            if (lists.length === 0) {
-                listsContainer.innerHTML = '<p class="text-gray-500 italic">Nenhuma lista encontrada. Clique em "Nova Lista" para começar.</p>';
+        const initializeApp = async () => {
+            loadingOverlay.style.display = 'block';
+            
+            // Configura persistência de sessão (opcional, mas bom para PWAs)
+            await setPersistence(auth, browserSessionPersistence);
+            
+            // Tenta fazer login anônimo
+            try {
+                // Tenta fazer login anônimo
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Erro ao fazer login anônimo:", error);
+                // Exibe mensagem de diagnóstico após falha
+                diagnosticMessage.style.display = 'block';
+                loadingOverlay.style.display = 'none';
                 return;
             }
 
-            lists.forEach(list => {
-                const isActive = list.id === activeListId;
-                const buttonClass = isActive
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-100';
+            // O listener onAuthStateChanged cuidará do resto
+            // Adiciona um timeout de segurança (5 segundos) para feedback
+            const loadTimeout = setTimeout(() => {
+                if (loadingOverlay.style.display !== 'none') {
+                    console.error("Timeout: O app demorou muito para iniciar. Verifique as regras de segurança do Firestore e a Autenticação Anônima.");
+                    diagnosticMessage.style.display = 'block';
+                    loadingOverlay.style.display = 'none';
+                }
+            }, 5000);
 
-                const button = document.createElement('button');
-                button.textContent = list.name;
-                button.className = `py-2 px-4 rounded-full font-semibold text-sm transition duration-200 whitespace-nowrap ${buttonClass}`;
-                button.onclick = () => selectList(list.id);
-                listsContainer.appendChild(button);
+            onAuthStateChanged(auth, (user) => {
+                clearTimeout(loadTimeout);
+                if (user) {
+                    userId = user.uid;
+                    console.log(`Usuário autenticado: ${userId}`);
+                    startRealtimeListeners();
+                    
+                    // Mostra o conteúdo principal e esconde o carregamento
+                    loadingOverlay.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    itemFormContainer.style.display = 'block';
+                    listItemsContainer.style.display = 'block';
+                } else {
+                    console.log("Usuário deslogado. Aguardando login...");
+                }
             });
         };
 
-        /** Renderiza os itens da lista ativa e atualiza os totais. */
-        const renderActiveList = () => {
-            itemsListEl.innerHTML = '';
+        const startRealtimeListeners = () => {
+            // 1. Listener para Listas de Compras
+            const listsPath = generatePath(APP_COLLECTION);
+            if (!listsPath) return;
 
-            if (!activeList) {
-                listTitleEl.textContent = 'Selecione uma Lista Acima';
-                addItemForm.classList.add('hidden');
-                listFooter.classList.add('hidden');
-                itemsListEl.innerHTML = ''; // Limpa itens
-                emptyListMessage.classList.remove('hidden'); // Mostra mensagem de lista vazia
+            const qLists = query(collection(db, listsPath), orderBy("createdAt", "desc"));
+
+            onSnapshot(qLists, (snapshot) => {
+                shoppingLists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderListSelector();
+                
+                // Se não houver lista, desabilita a exclusão
+                if (shoppingLists.length === 0) {
+                    deleteListBtn.disabled = true;
+                } else {
+                    deleteListBtn.disabled = false;
+                }
+            }, (error) => {
+                console.error("Erro ao ouvir listas:", error);
+            });
+        };
+
+        const renderListSelector = () => {
+            listSelector.innerHTML = '';
+            
+            if (shoppingLists.length === 0) {
+                // Adiciona opção padrão se não houver listas
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Nenhuma lista criada';
+                listSelector.appendChild(option);
+                // Reseta a lista atual
+                currentListId = null;
+                renderItems([]);
                 return;
             }
 
-            const items = activeList.items || [];
-            listTitleEl.textContent = activeList.name;
-            addItemForm.classList.remove('hidden');
-            listFooter.classList.remove('hidden');
+            // Define ou mantém a lista atual
+            let listToSelect = currentListId;
+            if (!listToSelect || !shoppingLists.find(l => l.id === listToSelect)) {
+                // Seleciona a primeira lista se a atual for inválida ou inexistente
+                listToSelect = shoppingLists[0].id;
+            }
+
+            shoppingLists.forEach(list => {
+                const option = document.createElement('option');
+                option.value = list.id;
+                option.textContent = list.name;
+                if (list.id === listToSelect) {
+                    option.selected = true;
+                }
+                listSelector.appendChild(option);
+            });
+
+            // Atualiza a lista atual e inicia o listener de itens
+            if (currentListId !== listToSelect) {
+                currentListId = listToSelect;
+                startItemsListener(currentListId);
+            }
+        };
+
+        // --- LISTENERS E RENDERING DE ITENS ---
+
+        const startItemsListener = (listId) => {
+            if (itemsUnsubscribe) {
+                itemsUnsubscribe(); // Desliga o listener anterior
+            }
+
+            if (!listId) {
+                renderItems([]);
+                return;
+            }
+
+            const itemsPath = generatePath(`${APP_COLLECTION}/${listId}/${ITEMS_COLLECTION}`);
+            if (!itemsPath) return;
+
+            // Ordena pelo status (não comprados primeiro) e depois pelo nome
+            const qItems = query(collection(db, itemsPath), 
+                orderBy("isBought", "asc"), 
+                orderBy("name", "asc")
+            );
+
+            itemsUnsubscribe = onSnapshot(qItems, (snapshot) => {
+                const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderItems(items);
+            }, (error) => {
+                console.error("Erro ao ouvir itens:", error);
+            });
+        };
+
+        const renderItems = (items) => {
+            listContainer.innerHTML = '';
+            let total = 0;
+            let totalBought = 0;
 
             if (items.length === 0) {
-                emptyListMessage.classList.remove('hidden');
+                emptyListMessage.style.display = 'block';
+                listContainer.appendChild(emptyListMessage);
             } else {
-                emptyListMessage.classList.add('hidden');
-                
-                let totalPrice = 0;
-                let purchasedCount = 0;
+                emptyListMessage.style.display = 'none';
+            }
 
-                items.sort((a, b) => a.checked - b.checked || a.name.localeCompare(b.name));
+            items.forEach(item => {
+                const price = item.price || 0;
+                const quantity = item.quantity || 1;
+                const itemTotal = price * quantity;
 
-                items.forEach(item => {
-                    const li = document.createElement('li');
-                    const itemTotal = (item.quantity * item.price) || 0;
-                    totalPrice += itemTotal;
-                    if (item.checked) {
-                        purchasedCount++;
-                    }
+                // Calcula o total
+                total += itemTotal;
+                if (item.isBought) {
+                    totalBought += itemTotal;
+                }
 
-                    const checkedClass = item.checked ? 'line-through text-gray-500 bg-green-50' : 'text-gray-800 bg-white hover:bg-gray-50';
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `flex items-center justify-between p-3 transition duration-150 ${item.isBought ? 'bg-green-50/50 text-gray-400 line-through' : 'hover:bg-gray-50'}`;
+                itemDiv.id = `item-${item.id}`;
 
-                    li.className = `flex items-center p-3 rounded-lg shadow transition duration-150 border border-gray-100 ${checkedClass}`;
-                    li.innerHTML = `
-                        <input type="checkbox" ${item.checked ? 'checked' : ''} 
-                            class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-4 cursor-pointer" 
-                            data-item-id="${item.id}" onchange="handleToggleChecked('${item.id}')">
+                itemDiv.innerHTML = `
+                    <div class="flex items-center flex-grow min-w-0">
+                        <!-- Checkbox para Comprado/Não Comprado -->
+                        <input type="checkbox" ${item.isBought ? 'checked' : ''} 
+                               class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3 flex-shrink-0" 
+                               onchange="toggleItemBought('${item.id}', event.target.checked)">
                         
-                        <div class="flex-grow">
-                            <p class="font-medium text-lg">${item.name} 
-                                <span class="text-sm font-normal text-gray-500 ml-1">(${item.quantity} ${item.price > 0 ? 'x ' + formatCurrency(item.price) : ''})</span>
-                            </p>
+                        <!-- Detalhes do Item -->
+                        <div class="flex-grow min-w-0">
+                            <p class="font-semibold text-lg truncate">${item.name}</p>
+                            <p class="text-sm text-gray-500">${item.quantity} x ${formatCurrency(price)}</p>
                         </div>
-                        
-                        <span class="text-lg font-semibold w-24 text-right">
-                            ${formatCurrency(itemTotal)}
-                        </span>
-
-                        <button onclick="handleDeleteItem('${item.id}')" 
-                            class="ml-3 p-1 text-red-400 hover:text-red-600 transition duration-150 rounded-full hover:bg-red-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 100 2v6a1 1 0 100-2V8z" clip-rule="evenodd" />
-                            </svg>
+                    </div>
+                    
+                    <!-- Preço Total do Item e Botão Excluir -->
+                    <div class="flex items-center space-x-4 flex-shrink-0">
+                        <span class="font-bold text-lg ${item.isBought ? 'text-gray-400' : 'text-blue-700'}">${formatCurrency(itemTotal)}</span>
+                        <button onclick="deleteItem('${item.id}')" 
+                                class="text-red-400 hover:text-red-600 transition duration-150 p-1 rounded-full hover:bg-red-50" 
+                                title="Excluir item">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
-                    `;
-                    itemsListEl.appendChild(li);
-                });
+                    </div>
+                `;
+                listContainer.appendChild(itemDiv);
+            });
 
-                // Atualiza Totais
-                purchasedCountEl.textContent = purchasedCount;
-                totalPriceEl.textContent = formatCurrency(totalPrice);
-            }
+            totalPriceElement.textContent = formatCurrency(total);
         };
 
-        // --- Funções de Ação do App (CRUD Firestore) ---
+        // --- FUNÇÕES DE AÇÃO DO USUÁRIO (CRUD) ---
 
-        /** Seleciona uma lista para edição e visualização. */
-        const selectList = (listId) => {
-            activeListId = listId;
-            activeList = lists.find(l => l.id === listId);
-            renderLists(); // Re-renderiza para atualizar o estado ativo do botão
-            renderActiveList(); // Renderiza os detalhes da nova lista ativa
-        };
-
-        /** Lida com o envio do formulário de criação de lista. */
-        const handleCreateList = async (e) => {
-            e.preventDefault();
-            const listName = document.getElementById('new-list-name').value.trim();
-            if (!listName || !userId) return;
-
-            closeModal();
-
+        // Função global para alternar status do item
+        window.toggleItemBought = async (itemId, isBought) => {
+            if (!currentListId) return;
+            const itemRef = doc(db, generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`), itemId);
             try {
-                const listRef = doc(db, getListCollectionPath(), crypto.randomUUID());
-                await setDoc(listRef, {
-                    name: listName,
-                    items: [], // Inicializa com array vazio de itens
-                    createdAt: new Date(),
-                    userId: userId,
-                });
+                await updateDoc(itemRef, { isBought: isBought });
             } catch (error) {
-                console.error("Erro ao criar lista:", error);
+                console.error("Erro ao atualizar status do item:", error);
+                showModalMessage("Erro", "Não foi possível atualizar o status do item. Tente novamente.");
             }
         };
 
-        /** Lida com o envio do formulário de adição de item. */
+        // Envio do formulário de novo item
         addItemForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!activeListId || !activeList) return;
+            if (!currentListId) {
+                showModalMessage("Atenção", "Por favor, crie uma lista antes de adicionar itens.");
+                return;
+            }
 
             const name = document.getElementById('item-name').value.trim();
-            const quantity = parseInt(document.getElementById('item-quantity').value, 10) || 1;
-            // Garante que o preço seja um número (0 se vazio)
-            const price = parseFloat(document.getElementById('item-price').value.replace(',', '.')) || 0;
+            const quantity = parseInt(document.getElementById('item-quantity').value);
+            const price = parseFloat(document.getElementById('item-price').value) || 0;
 
-            if (!name) return;
+            if (!name || isNaN(quantity) || quantity <= 0) return;
 
-            const newItem = {
-                id: crypto.randomUUID(),
-                name: name,
-                quantity: quantity,
-                price: price,
-                checked: false,
-            };
-
-            const updatedItems = [...activeList.items, newItem];
+            const itemsPath = generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`);
+            if (!itemsPath) return;
 
             try {
-                const listRef = doc(db, getListCollectionPath(), activeListId);
-                await setDoc(listRef, { items: updatedItems }, { merge: true });
-                
-                // Limpa o formulário após adicionar
+                await addDoc(collection(db, itemsPath), {
+                    name: name,
+                    quantity: quantity,
+                    price: price,
+                    isBought: false,
+                    createdAt: new Date(),
+                });
+                // Limpa o formulário
                 document.getElementById('item-name').value = '';
-                document.getElementById('item-quantity').value = '1';
+                document.getElementById('item-quantity').value = 1;
                 document.getElementById('item-price').value = '';
-                document.getElementById('item-name').focus();
-
             } catch (error) {
                 console.error("Erro ao adicionar item:", error);
+                showModalMessage("Erro", "Não foi possível adicionar o item à lista.");
             }
         });
 
-        /** Alterna o status 'checked' de um item. */
-        window.handleToggleChecked = async (itemId) => {
-            if (!activeListId || !activeList) return;
-
-            const updatedItems = activeList.items.map(item => {
-                if (item.id === itemId) {
-                    return { ...item, checked: !item.checked };
-                }
-                return item;
-            });
-
-            try {
-                const listRef = doc(db, getListCollectionPath(), activeListId);
-                await setDoc(listRef, { items: updatedItems }, { merge: true });
-            } catch (error) {
-                console.error("Erro ao alternar status do item:", error);
-            }
-        };
-
-        /** Deleta um item da lista. */
-        window.handleDeleteItem = async (itemId) => {
-            if (!activeListId || !activeList) return;
-
-            const updatedItems = activeList.items.filter(item => item.id !== itemId);
-
-            try {
-                const listRef = doc(db, getListCollectionPath(), activeListId);
-                await setDoc(listRef, { items: updatedItems }, { merge: true });
-            } catch (error) {
-                console.error("Erro ao deletar item:", error);
-            }
-        };
-
-        /** Deleta a lista ativa. */
-        window.handleDeleteList = async () => {
-            closeModal();
-            if (!activeListId) return;
-
-            try {
-                const listRef = doc(db, getListCollectionPath(), activeListId);
-                await deleteDoc(listRef);
-
-                // Reset state after deletion
-                activeListId = null;
-                activeList = null;
-                // onSnapshot will handle the state update and re-rendering
-            } catch (error) {
-                console.error("Erro ao deletar a lista:", error);
-            }
-        };
-
-        // --- Funções de Compartilhamento (WhatsApp e PDF) ---
-
-        /** Gera o conteúdo de texto formatado para o PDF. */
-        const generatePdfText = () => {
-            if (!activeList) return "";
-
-            const items = activeList.items || [];
-            const checkedItems = items.filter(i => i.checked);
-            const uncheckedItems = items.filter(i => !i.checked);
+        // Excluir item
+        window.deleteItem = async (itemId) => {
+            if (!currentListId) return;
             
-            const total = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            // Usando modal customizado para confirmação (em vez de confirm())
+            showModalMessage("Confirmar Exclusão", 
+                "Tem certeza que deseja excluir este item?",
+                () => confirmDeleteItem(itemId), 
+                "Excluir", 
+                "bg-red-500 hover:bg-red-600"
+            );
+        };
 
-            let content = [];
-            content.push(`LISTA DE COMPRAS: ${activeList.name.toUpperCase()}`);
-            content.push(`Data de Geração: ${new Date().toLocaleDateString('pt-BR')}`);
-            content.push("======================================================");
+        const confirmDeleteItem = async (itemId) => {
+            if (!currentListId) return;
+            const itemRef = doc(db, generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`), itemId);
+            try {
+                await deleteDoc(itemRef);
+                hideModal();
+            } catch (error) {
+                console.error("Erro ao excluir item:", error);
+                showModalMessage("Erro", "Não foi possível excluir o item.");
+            }
+        };
 
-            if (uncheckedItems.length > 0) {
-                content.push("\n--- A COMPRAR ---");
-                uncheckedItems.forEach(item => {
-                    const priceText = item.price > 0 ? ` (${formatCurrency(item.price)} por und.)` : '';
-                    content.push(`[ ] ${item.name} | Qtd: ${item.quantity}${priceText}`);
+        // Seleção de lista
+        listSelector.addEventListener('change', (e) => {
+            currentListId = e.target.value;
+            startItemsListener(currentListId);
+        });
+
+        // --- GESTÃO DE LISTAS (MODAL) ---
+
+        window.showListModal = (action) => {
+            const modal = document.getElementById('list-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            const modalActionBtn = document.getElementById('modal-action-btn');
+            
+            modalActionBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200';
+            modalActionBtn.onclick = null;
+            modalBody.innerHTML = '';
+            
+            if (action === 'create') {
+                modalTitle.textContent = 'Criar Nova Lista';
+                modalBody.innerHTML = `
+                    <input type="text" id="new-list-name" placeholder="Nome da Lista (Ex: Mensal)" 
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                `;
+                modalActionBtn.textContent = 'Criar';
+                modalActionBtn.onclick = createList;
+            } else if (action === 'delete') {
+                if (!currentListId) return;
+                const listName = shoppingLists.find(l => l.id === currentListId)?.name || 'esta lista';
+                modalTitle.textContent = 'Excluir Lista';
+                modalBody.innerHTML = `<p>Tem certeza que deseja excluir permanentemente a lista **${listName}** e todos os seus itens?</p>`;
+                modalActionBtn.textContent = 'Excluir';
+                modalActionBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200';
+                modalActionBtn.onclick = deleteList;
+            }
+            
+            modal.classList.remove('hidden');
+        };
+
+        window.createList = async () => {
+            const name = document.getElementById('new-list-name').value.trim();
+            if (!name) return;
+            
+            const listsPath = generatePath(APP_COLLECTION);
+            if (!listsPath) return;
+
+            try {
+                await addDoc(collection(db, listsPath), {
+                    name: name,
+                    createdAt: new Date(),
                 });
+                hideModal();
+            } catch (error) {
+                console.error("Erro ao criar lista:", error);
+                showModalMessage("Erro", "Não foi possível criar a lista.");
+            }
+        };
+
+        window.deleteList = async () => {
+            if (!currentListId) return;
+
+            try {
+                // Excluir todos os itens da subcoleção primeiro (Firestore não faz exclusão em cascata)
+                const itemsPath = generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`);
+                const snapshot = await getDocs(collection(db, itemsPath));
+                const batch = writeBatch(db); // Usar batch para exclusão em massa (precisa importar writeBatch)
+                
+                // Nota: writeBatch não está no import simplificado acima (necessário para exclusão real da subcoleção)
+                // Usando a exclusão um por um como fallback para manter a compatibilidade com o CDN simplificado:
+                snapshot.docs.forEach(async (d) => {
+                    await deleteDoc(d.ref); 
+                });
+                
+                // Excluir o documento principal da lista
+                const listRef = doc(db, generatePath(APP_COLLECTION), currentListId);
+                await deleteDoc(listRef);
+                
+                currentListId = null; // Reseta a ID atual
+                hideModal();
+
+            } catch (error) {
+                console.error("Erro ao excluir lista:", error);
+                // Exibe uma mensagem de erro temporária para o usuário
+                showModalMessage("Erro", "Não foi possível excluir a lista. Verifique as regras de segurança.");
+            }
+        };
+        
+        window.hideModal = () => {
+            document.getElementById('list-modal').classList.add('hidden');
+        };
+
+        // Modal para mensagens de erro/confirmação
+        const showModalMessage = (title, message, confirmCallback = null, confirmText = 'OK', confirmStyle = 'bg-blue-500 hover:bg-blue-600') => {
+            const modal = document.getElementById('list-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            const modalActionBtn = document.getElementById('modal-action-btn');
+            
+            modalTitle.textContent = title;
+            modalBody.innerHTML = `<p>${message}</p>`;
+            
+            if (confirmCallback) {
+                // Modo Confirmação
+                modalActionBtn.textContent = confirmText;
+                modalActionBtn.className = `${confirmStyle} text-white font-semibold py-2 px-4 rounded-lg transition duration-200`;
+                modalActionBtn.onclick = confirmCallback;
+            } else {
+                // Modo Apenas OK
+                modalActionBtn.textContent = 'OK';
+                modalActionBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200';
+                modalActionBtn.onclick = hideModal;
             }
 
-            if (checkedItems.length > 0) {
-                content.push("\n--- ITENS COMPRADOS ---");
-                checkedItems.forEach(item => {
-                    const priceText = item.price > 0 ? ` (${formatCurrency(item.price)} por und.)` : '';
-                    content.push(`[X] ${item.name} | Qtd: ${item.quantity}${priceText}`);
+            modal.classList.remove('hidden');
+        };
+
+        // --- EXPORTAR E COMPARTILHAR ---
+
+        const generateSummary = (items) => {
+            let total = 0;
+            let summary = `*Lista de Compras:* ${shoppingLists.find(l => l.id === currentListId)?.name || 'Lista Sem Nome'}\n\n`;
+            
+            const toBuy = items.filter(item => !item.isBought);
+            const bought = items.filter(item => item.isBought);
+
+            // Itens a Comprar
+            summary += "*🛒 Itens Faltando:*\n";
+            if (toBuy.length > 0) {
+                toBuy.forEach(item => {
+                    const itemTotal = (item.price || 0) * (item.quantity || 1);
+                    total += itemTotal;
+                    summary += `- ${item.name} (${item.quantity} un) - ${formatCurrency(itemTotal)} \n`;
                 });
+            } else {
+                summary += "🎉 Nada faltando! Lista completa.\n";
+            }
+            
+            // Itens Comprados
+            summary += "\n*✅ Itens Comprados:*\n";
+            if (bought.length > 0) {
+                 bought.forEach(item => {
+                    summary += `- ${item.name} (${item.quantity} un)\n`;
+                });
+            } else {
+                summary += "Nenhum item marcado como comprado.\n";
             }
 
-            content.push("\n======================================================");
-            content.push(`TOTAL ESTIMADO: ${formatCurrency(total)}`);
+            summary += `\n*💰 Total Estimado (Itens Faltando):* ${formatCurrency(total)}\n\n_Gerado por Lista Pro._`;
+            return { text: summary, total: total };
+        };
+        
+        // Compartilhar WhatsApp
+        window.shareWhatsApp = async () => {
+            if (!currentListId) {
+                showModalMessage("Atenção", "Por favor, selecione uma lista para compartilhar.");
+                return;
+            }
+            
+            // Re-fetch dos itens para garantir que a cópia seja mais recente
+            const itemsPath = generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`);
+            const snapshot = await getDocs(collection(db, itemsPath));
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            return content.join('\n');
+            const { text } = generateSummary(items);
+            const encodedText = encodeURIComponent(text);
+
+            // Tenta usar a API nativa do WhatsApp
+            const url = `whatsapp://send?text=${encodedText}`;
+            window.open(url, '_blank');
+        };
+        
+        // Exportar PDF
+        window.exportToPDF = async () => {
+            if (!currentListId) {
+                showModalMessage("Atenção", "Por favor, selecione uma lista para exportar.");
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            if (!jsPDF) {
+                showModalMessage("Erro", "Biblioteca de PDF não carregada. Tente recarregar a página.");
+                return;
+            }
+
+            const itemsPath = generatePath(`${APP_COLLECTION}/${currentListId}/${ITEMS_COLLECTION}`);
+            const snapshot = await getDocs(collection(db, itemsPath));
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            const listName = shoppingLists.find(l => l.id === currentListId)?.name || 'Lista de Compras';
+
+            const doc = new jsPDF();
+            let y = 15;
+            let total = 0;
+            
+            // Título
+            doc.setFontSize(18);
+            doc.text(`Lista de Compras: ${listName}`, 10, y);
+            y += 10;
+            
+            // Metadata
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 10, y);
+            y += 10;
+            
+            doc.setTextColor(0);
+            doc.setFontSize(12);
+
+            // Tabela de Itens Faltando
+            doc.text("🛒 Itens Faltando:", 10, y);
+            y += 7;
+            
+            const toBuy = items.filter(item => !item.isBought);
+            if (toBuy.length > 0) {
+                toBuy.forEach(item => {
+                    const itemTotal = (item.price || 0) * (item.quantity || 1);
+                    total += itemTotal;
+                    doc.text(`- ${item.name}`, 15, y);
+                    doc.text(`${item.quantity} x ${formatCurrency(item.price || 0)}`, 100, y);
+                    doc.text(`${formatCurrency(itemTotal)}`, 180, y, { align: 'right' });
+                    y += 6;
+                });
+            } else {
+                doc.text("Nenhum item faltando. 🎉", 15, y);
+                y += 6;
+            }
+            
+            y += 5;
+
+            // Tabela de Itens Comprados
+            doc.text("✅ Itens Comprados:", 10, y);
+            y += 7;
+            
+            const bought = items.filter(item => item.isBought);
+            if (bought.length > 0) {
+                bought.forEach(item => {
+                    doc.setTextColor(150); // Cor cinza para comprados
+                    doc.text(`- ${item.name}`, 15, y);
+                    doc.text(`${item.quantity} un.`, 100, y);
+                    y += 6;
+                });
+            } else {
+                doc.setTextColor(150);
+                doc.text("Nenhum item marcado como comprado.", 15, y);
+                y += 6;
+            }
+            
+            // Linha de Total
+            doc.setTextColor(0);
+            y += 10;
+            doc.line(10, y, 200, y); // Linha separadora
+            y += 5;
+            
+            doc.setFontSize(16);
+            doc.text(`Total Estimado: ${formatCurrency(total)}`, 10, y);
+
+            doc.save(`Lista_Compras_${listName.replace(/\s/g, '_')}.pdf`);
+        };
+
+        // --- INICIALIZAÇÃO ---
+
+        // PWA: Registra o Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('SW registrado com sucesso:', registration);
+                    })
+                    .catch(error => {
+                        console.error('Falha no registro do SW:', error);
+                    });
+            });
         }
 
-        /** Lida com a exportação da lista ativa para PDF. */
-        window.handleExportPDF = () => {
-            if (!activeList || typeof window.jspdf === 'undefined') {
-                console.error("Lista ativa não definida ou jsPDF não carregado.");
-                return;
-            }
-
-            const doc = new window.jspdf.jsPDF();
-            const pdfText = generatePdfText();
-            
-            const lines = pdfText.split('\n');
-            let y = 15; // Início do documento
-            const lineHeight = 8;
-            const margin = 10;
-
-            doc.setFontSize(10);
-            
-            lines.forEach(line => {
-                if (y + lineHeight > doc.internal.pageSize.height - margin) {
-                    doc.addPage();
-                    y = margin;
-                }
-                
-                if (line.startsWith('LISTA DE COMPRAS')) {
-                    doc.setFontSize(16);
-                    doc.setFont(undefined, 'bold');
-                } else if (line.startsWith('---')) {
-                    doc.setFontSize(12);
-                    doc.setFont(undefined, 'bold');
-                    doc.text(line, margin, y);
-                    y += lineHeight / 2; // Espaço extra para cabeçalho
-                    return;
-                } else if (line.startsWith('=')) {
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-                    doc.text(line, margin, y);
-                    y += lineHeight / 2; // Espaço extra
-                    return;
-                } else if (line.startsWith('TOTAL ESTIMADO')) {
-                    doc.setFontSize(14);
-                    doc.setFont(undefined, 'bold');
-                } else {
-                    doc.setFont(undefined, 'normal');
-                    doc.setFontSize(10);
-                }
-                
-                doc.text(line, margin, y);
-                y += lineHeight;
-
-                // Restaura o tamanho da fonte após o cabeçalho principal
-                if (line.startsWith('LISTA DE COMPRAS')) {
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-                }
-            });
-
-            const fileName = `Lista_${activeList.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
-            doc.save(fileName);
-        };
-
-        /** Gera a mensagem formatada para o WhatsApp. */
-        const generateWhatsAppText = () => {
-            if (!activeList) return "";
-
-            const items = activeList.items || [];
-            const checkedItems = items.filter(i => i.checked);
-            const uncheckedItems = items.filter(i => !i.checked);
-
-            let message = `🛒 *Lista de Compras: ${activeList.name}*\n\n`;
-
-            if (uncheckedItems.length > 0) {
-                message += "⚠️ *A Comprar:*\n";
-                uncheckedItems.forEach(item => {
-                    const priceText = item.price > 0 ? ` (${formatCurrency(item.price)})` : '';
-                    message += `- ${item.name} (x${item.quantity})${priceText}\n`;
-                });
-                message += "\n";
-            }
-
-            if (checkedItems.length > 0) {
-                message += "✅ *Itens Comprados/Estimados:*\n";
-                checkedItems.forEach(item => {
-                    const priceText = item.price > 0 ? ` (${formatCurrency(item.price)})` : '';
-                    message += `- ${item.name} (x${item.quantity})${priceText}\n`;
-                });
-                message += "\n";
-            }
-            
-            const total = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-            message += `💰 *Total Estimado: ${formatCurrency(total)}*`;
-
-            return encodeURIComponent(message);
-        };
-
-        whatsappShareBtn.addEventListener('click', () => {
-            if (!activeList) return;
-            const text = generateWhatsAppText();
-            // Tenta abrir o link do WhatsApp
-            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-        });
-
-
-        // --- Funções do Firebase (Auth e Data) ---
-
-        /** Retorna o caminho da coleção de listas de compras. */
-        const getListCollectionPath = () => {
-            if (!userId) return null;
-            return `artifacts/${appId}/users/${userId}/shopping_lists`;
-        };
-
-        /** Inicializa o Firebase e a Autenticação. */
-        const initializeFirebase = async () => {
-            if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("SEU_")) {
-                console.error("Firebase config is missing or using placeholder.");
-                loadingOverlay.textContent = "ERRO CRÍTICO: Configuração do Firebase ausente. Por favor, edite o código para inserir suas chaves.";
-                return;
-            }
-
-            setLogLevel('debug'); // Enable Firestore logging
-
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                if (initialAuthToken) {
-                    // Usado apenas no ambiente Canvas
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // Usado no GitHub Pages (sign-in anônimo)
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                    } else {
-                        userId = null; 
-                    }
-                    isAuthReady = true;
-                    loadingOverlay.classList.add('hidden');
-                    mainContent.classList.remove('hidden');
-                    console.log("Auth State Changed. User ID:", userId);
-                    startDataListener();
-                });
-
-            } catch (error) {
-                console.error("Erro ao inicializar Firebase:", error);
-                loadingOverlay.textContent = `Erro ao carregar (ver console): ${error.message}`;
-            }
-        };
-
-        /** Inicia o listener de dados em tempo real (onSnapshot). */
-        const startDataListener = () => {
-            if (!isAuthReady || !userId || !db) return;
-
-            const listCollectionRef = collection(db, getListCollectionPath());
-            const listsQuery = query(listCollectionRef);
-
-            onSnapshot(listsQuery, (snapshot) => {
-                const fetchedLists = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    fetchedLists.push({
-                        id: doc.id,
-                        ...data,
-                    });
-                });
-
-                // Sort locally by name (case-insensitive)
-                lists = fetchedLists.sort((a, b) => a.name.localeCompare(b.name));
-
-                // Se a lista ativa foi deletada ou não existe mais, reseta o estado.
-                if (activeListId) {
-                    activeList = lists.find(l => l.id === activeListId) || null;
-                    if (!activeList) {
-                        activeListId = null; // Lista sumiu, deseleciona.
-                    }
-                }
-
-                // Se não há lista ativa e há listas disponíveis, seleciona a primeira.
-                if (!activeListId && lists.length > 0) {
-                    selectList(lists[0].id);
-                }
-
-                renderLists();
-                renderActiveList();
-                console.log("Dados de listas atualizados em tempo real.");
-            }, (error) => {
-                console.error("Erro no listener do Firestore:", error);
-            });
-        };
-
-        // --- Registro do Service Worker para PWA (Progressive Web App) ---
-        // Adicionamos o registro aqui, logo após a inicialização do Firebase ser garantida.
-        const registerServiceWorker = () => {
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./service-worker.js')
-                        .then(registration => {
-                            console.log('ServiceWorker registrado com sucesso:', registration.scope);
-                        })
-                        .catch(err => {
-                            console.error('Falha no registro do ServiceWorker:', err);
-                        });
-                });
-            }
-        };
-
-        // Inicia o app e o registro do Service Worker
-        window.onload = () => {
-            initializeFirebase();
-            registerServiceWorker();
-        };
+        // Inicia o app web
+        window.addEventListener('load', initializeApp);
     </script>
 </body>
 </html>
-
-
