@@ -75,7 +75,7 @@
         <div id="list-items-container" class="bg-white p-4 rounded-xl shadow-lg mb-4" style="display: none;">
             <h2 class="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">Itens</h2>
             <div id="shopping-list" class="scroll-container overflow-y-auto divide-y divide-gray-100">
-                <p id="empty-list-message" class="text-gray-500 text-center py-6">Lista vazia.</p>
+                <!-- O conteúdo será preenchido dinamicamente pelo JS -->
             </div>
         </div>
         
@@ -99,7 +99,7 @@
 
     <script type="module">
         // =================================================================
-        // CONFIGURAÇÃO DO FIREBASE (JÁ PREENCHIDA)
+        // CONFIGURAÇÃO DO FIREBASE
         // =================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
@@ -122,7 +122,6 @@
             const banner = document.getElementById('error-banner');
             document.getElementById('error-text').textContent = msg;
             banner.classList.remove('hidden');
-            // Esconde o banner após 5 segundos
             setTimeout(() => banner.classList.add('hidden'), 5000);
         };
 
@@ -162,7 +161,6 @@
             const path = generatePath("shopping_lists");
             if(!path) return;
 
-            // Listener de Listas
             onSnapshot(query(collection(db, path), orderBy("createdAt", "desc")), 
                 (snapshot) => {
                     shoppingLists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -171,7 +169,7 @@
                 }, 
                 (error) => {
                     if (error.code === 'permission-denied') {
-                        showError("Permissão Negada! Atualize as Regras do Firestore para permitir subcoleções (document=**).");
+                        showError("Permissão Negada! Atualize as Regras do Firestore.");
                     } else {
                         showError("Erro ao carregar listas: " + error.message);
                     }
@@ -185,7 +183,6 @@
 
             const path = generatePath(`shopping_lists/${listId}/items`);
             
-            // Listener de Itens
             itemsUnsubscribe = onSnapshot(query(collection(db, path), orderBy("isBought", "asc"), orderBy("name", "asc")), 
                 (snapshot) => {
                     const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -193,7 +190,7 @@
                 },
                 (error) => {
                     if (error.code === 'permission-denied') {
-                        showError("Erro: Não é possível ler os itens. Verifique a regra recursiva (**).");
+                        showError("Erro: Não é possível ler os itens.");
                     }
                 }
             );
@@ -232,13 +229,13 @@
 
         const renderItems = (items) => {
             const container = document.getElementById('shopping-list');
+            // CORREÇÃO 1: Limpa o container antes de checar se está vazio
             container.innerHTML = '';
             let total = 0;
 
             if (items.length === 0) {
-                document.getElementById('empty-list-message').style.display = 'block';
-            } else {
-                document.getElementById('empty-list-message').style.display = 'none';
+                // CORREÇÃO 1: Insere a mensagem diretamente no HTML em vez de tentar acessar um ID deletado
+                container.innerHTML = '<p id="empty-list-message" class="text-gray-500 text-center py-6">Lista vazia.</p>';
             }
 
             items.forEach(item => {
@@ -310,8 +307,6 @@
         window.deleteList = async () => {
             if (!currentListId) return;
             try {
-                // Nota: Em apps reais, usaríamos Cloud Functions para deletar subcoleções recursivamente.
-                // Aqui, deletamos apenas a referência da lista. Os itens ficarão "órfãos" mas invisíveis.
                 const listPath = generatePath("shopping_lists");
                 await deleteDoc(doc(db, listPath, currentListId));
                 hideModal();
@@ -334,7 +329,7 @@
                     name, quantity: Number(qtd), price: Number(price), isBought: false
                 });
                 e.target.reset();
-                document.getElementById('item-quantity').value = 1; // Reset manual para 1
+                document.getElementById('item-quantity').value = 1;
                 document.getElementById('item-name').focus();
             } catch (err) {
                 console.error(err);
@@ -379,7 +374,10 @@
         };
 
         window.addEventListener('load', startApp);
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');
+        // CORREÇÃO 2: Verifica protocolo antes de registrar SW para evitar erro em blob
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+        }
     </script>
 </body>
 </html>
