@@ -30,9 +30,9 @@
             </div>
             
             <!-- Mensagens de Erro -->
-            <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                <p class="font-bold">Erro de Conexão</p>
-                <p id="error-text">Verifique as regras de segurança do Firebase.</p>
+            <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow" role="alert">
+                <p class="font-bold">Erro de Permissão</p>
+                <p id="error-text">O banco de dados recusou a gravação. Verifique as Regras do Firestore.</p>
             </div>
 
             <div id="main-content" style="display: none;">
@@ -79,9 +79,8 @@
             </div>
         </div>
         
-        <!-- Debug Info (ID do Usuário) -->
         <div class="text-xs text-gray-400 text-center mt-auto pb-4">
-            User ID: <span id="debug-user-id">...</span>
+            App ID: listapro-6ef73 | User ID: <span id="debug-user-id">...</span>
         </div>
     </div>
 
@@ -100,14 +99,14 @@
 
     <script type="module">
         // =================================================================
-        // COLOQUE SUAS CHAVES DO FIREBASE AQUI
+        // CONFIGURAÇÃO DO FIREBASE (JÁ PREENCHIDA)
         // =================================================================
         const firebaseConfig = {
-            apiKey: "SEU_API_KEY_AQUI", 
-            authDomain: "listapro-6ef73.firebaseapp.com", 
-            projectId: "listapro-6ef73", 
-            storageBucket: "listapro-6ef73.firebasestorage.app", 
-            messagingSenderId: "469100355228", 
+            apiKey: "AIzaSyAtY34SS6q_th0bTxbe_yY7YjjWPs0auvM",
+            authDomain: "listapro-6ef73.firebaseapp.com",
+            projectId: "listapro-6ef73",
+            storageBucket: "listapro-6ef73.firebasestorage.app",
+            messagingSenderId: "469100355228",
             appId: "1:469100355228:web:80e22df923e2c2cf0a1759"
         };
         // =================================================================
@@ -119,9 +118,12 @@
         let db, auth, userId = null, currentListId = null, shoppingLists = [], itemsUnsubscribe = null;
 
         const showError = (msg) => {
+            console.error(msg);
             const banner = document.getElementById('error-banner');
             document.getElementById('error-text').textContent = msg;
             banner.classList.remove('hidden');
+            // Esconde o banner após 5 segundos
+            setTimeout(() => banner.classList.add('hidden'), 5000);
         };
 
         const startApp = async () => {
@@ -131,8 +133,7 @@
                 auth = getAuth(app);
                 document.getElementById('loading-overlay').style.display = 'block';
                 
-                // Login Anônimo (Persistência Padrão = LOCAL)
-                // Isso garante que o ID do usuário seja o mesmo após o refresh
+                // Autenticação Anônima
                 await signInAnonymously(auth);
 
                 onAuthStateChanged(auth, (user) => {
@@ -148,7 +149,7 @@
                 });
             } catch (e) {
                 console.error(e);
-                showError("Falha na inicialização: " + e.message);
+                showError("Falha crítica na inicialização: " + e.message);
             }
         };
 
@@ -161,7 +162,7 @@
             const path = generatePath("shopping_lists");
             if(!path) return;
 
-            // Listener de Listas com tratamento de erro de Permissão
+            // Listener de Listas
             onSnapshot(query(collection(db, path), orderBy("createdAt", "desc")), 
                 (snapshot) => {
                     shoppingLists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -169,8 +170,11 @@
                     document.getElementById('delete-list-btn').disabled = shoppingLists.length === 0;
                 }, 
                 (error) => {
-                    console.error("Erro de Permissão (Listas):", error);
-                    showError("Permissão Negada: Verifique as Regras do Firestore no Console.");
+                    if (error.code === 'permission-denied') {
+                        showError("Permissão Negada! Atualize as Regras do Firestore para permitir subcoleções (document=**).");
+                    } else {
+                        showError("Erro ao carregar listas: " + error.message);
+                    }
                 }
             );
         };
@@ -188,8 +192,9 @@
                     renderItems(items);
                 },
                 (error) => {
-                    console.error("Erro de Permissão (Itens):", error);
-                    showError("Não foi possível carregar os itens. Permissão negada.");
+                    if (error.code === 'permission-denied') {
+                        showError("Erro: Não é possível ler os itens. Verifique a regra recursiva (**).");
+                    }
                 }
             );
         };
@@ -243,7 +248,7 @@
                 div.className = `flex justify-between items-center p-3 border-b ${item.isBought ? 'bg-green-50 opacity-70' : ''}`;
                 div.innerHTML = `
                     <div class="flex items-center gap-3 flex-grow">
-                        <input type="checkbox" ${item.isBought ? 'checked' : ''} class="w-5 h-5" onchange="toggleBought('${item.id}', this.checked)">
+                        <input type="checkbox" ${item.isBought ? 'checked' : ''} class="w-5 h-5 cursor-pointer" onchange="toggleBought('${item.id}', this.checked)">
                         <div class="${item.isBought ? 'line-through text-gray-500' : ''}">
                             <div class="font-bold">${item.name}</div>
                             <div class="text-sm text-gray-500">${item.quantity} x R$ ${(item.price||0).toFixed(2)}</div>
@@ -251,7 +256,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="font-bold">R$ ${totalItem.toFixed(2)}</span>
-                        <button onclick="deleteItem('${item.id}')" class="text-red-500 p-1">🗑️</button>
+                        <button onclick="deleteItem('${item.id}')" class="text-red-500 p-2 hover:bg-red-100 rounded-full">🗑️</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -275,7 +280,7 @@
                 setTimeout(() => document.getElementById('new-list-name').focus(), 100);
             } else {
                 document.getElementById('modal-title').textContent = 'Excluir Lista';
-                document.getElementById('modal-body').innerHTML = '<p>Tem certeza?</p>';
+                document.getElementById('modal-body').innerHTML = '<p>Tem certeza? Todos os itens serão apagados.</p>';
                 btn.textContent = 'Excluir';
                 btn.className = 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded';
                 btn.onclick = deleteList;
@@ -294,17 +299,26 @@
                 hideModal();
             } catch (e) {
                 console.error(e);
-                alert("Erro ao criar lista: " + e.message + "\nVerifique suas Regras no Firebase.");
+                if (e.code === 'permission-denied') {
+                    showError("Erro: Permissão Negada. O banco não permitiu criar a lista.");
+                } else {
+                    showError("Erro ao criar lista: " + e.message);
+                }
             }
         };
 
         window.deleteList = async () => {
             if (!currentListId) return;
             try {
+                // Nota: Em apps reais, usaríamos Cloud Functions para deletar subcoleções recursivamente.
+                // Aqui, deletamos apenas a referência da lista. Os itens ficarão "órfãos" mas invisíveis.
                 const listPath = generatePath("shopping_lists");
                 await deleteDoc(doc(db, listPath, currentListId));
                 hideModal();
-            } catch(e) { console.error(e); alert("Erro ao excluir."); }
+            } catch(e) { 
+                console.error(e); 
+                showError("Erro ao excluir. Verifique se você tem permissão."); 
+            }
         };
 
         document.getElementById('add-item-form').addEventListener('submit', async (e) => {
@@ -320,20 +334,29 @@
                     name, quantity: Number(qtd), price: Number(price), isBought: false
                 });
                 e.target.reset();
+                document.getElementById('item-quantity').value = 1; // Reset manual para 1
                 document.getElementById('item-name').focus();
             } catch (err) {
                 console.error(err);
-                alert("Erro ao salvar item. Verifique as permissões.");
+                if (err.code === 'permission-denied') {
+                    alert("ERRO: Não foi possível salvar o item.\n\nCausa: O banco de dados bloqueou a escrita.\nSolução: Use a regra com 'document=**' no console do Firebase.");
+                } else {
+                    alert("Erro ao salvar item: " + err.message);
+                }
             }
         });
 
         window.toggleBought = async (id, val) => {
-             await updateDoc(doc(db, generatePath(`shopping_lists/${currentListId}/items`), id), { isBought: val });
+             try {
+                await updateDoc(doc(db, generatePath(`shopping_lists/${currentListId}/items`), id), { isBought: val });
+             } catch (e) { showError("Erro ao atualizar item."); }
         };
 
         window.deleteItem = async (id) => {
             if(confirm("Excluir item?")) {
-                await deleteDoc(doc(db, generatePath(`shopping_lists/${currentListId}/items`), id));
+                try {
+                    await deleteDoc(doc(db, generatePath(`shopping_lists/${currentListId}/items`), id));
+                } catch (e) { showError("Erro ao excluir item."); }
             }
         };
 
@@ -342,10 +365,8 @@
             startItemsListener(currentListId);
         });
 
-        // Export PDF/Whatsapp functions omitted for brevity but hooks exist in HTML
         window.shareWhatsApp = () => {
              if(!currentListId) return;
-             // Lógica simplificada de share
              const text = `Lista: ${shoppingLists.find(l=>l.id===currentListId).name}`;
              window.open(`whatsapp://send?text=${encodeURIComponent(text)}`);
         };
